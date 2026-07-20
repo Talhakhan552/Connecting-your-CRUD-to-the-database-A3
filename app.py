@@ -39,17 +39,28 @@ def init_db():
 
 @app.route('/tasks', methods=['GET'])
 def get_all_tasks():
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute('SELECT id, title, done FROM tasks')
+    rows = cursor.fetchall()
+    conn.close()
+
+    tasks = [{'id': row[0], 'title': row[1], 'done': bool(row[2])} for row in rows]
     return jsonify(tasks), 200
 
-
-# GET /tasks/<int:task_id> - Read one task
 @app.route('/tasks/<int:task_id>', methods=['GET'])
 def get_task(task_id):
-    task = next((t for t in tasks if t['id'] == task_id), None)
-    if task is None:
-        return jsonify({"error": "Task not found"}), 404
-    return jsonify(task), 200
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute('SELECT id, title, done FROM tasks WHERE id = ?', (task_id,))
+    row = cursor.fetchone()
+    conn.close()
 
+    if row is None:
+        return jsonify({"error": "Task not found"}), 404
+
+    task = {'id': row[0], 'title': row[1], 'done': bool(row[2])}
+    return jsonify(task), 200
 
 # POST /tasks - Create new task
 @app.route('/tasks', methods=['POST'])
