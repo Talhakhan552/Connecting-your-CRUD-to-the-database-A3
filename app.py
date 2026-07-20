@@ -85,37 +85,47 @@ def create_task():
 # PUT /tasks/<int:task_id> - Update task
 @app.route('/tasks/<int:task_id>', methods=['PUT'])
 def update_task(task_id):
-    task = next((t for t in tasks if t['id'] == task_id), None)
-    
-    if task is None:
-        return jsonify({"error": "Task not found"}), 404
-    
-    data = request.get_json()
-    
-    # Validation: title must be present and non-empty
-    if not data or not data.get('title') or not data['title'].strip():
-        return jsonify({"error": "Title is required"}), 400
-    
-    task['title'] = data['title'].strip()
-    task['done'] = data.get('done', task['done'])
-    
-    return jsonify(task), 200
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute('SELECT id FROM tasks WHERE id = ?', (task_id,))
+    existing = cursor.fetchone()
 
+    if existing is None:
+        conn.close()
+        return jsonify({"error": "Task not found"}), 404
+
+    data = request.get_json()
+    if not data or not data.get('title') or not data['title'].strip():
+        conn.close()
+        return jsonify({"error": "Title is required"}), 400
+
+    title = data['title'].strip()
+    done = data.get('done', False)
+
+    cursor.execute('UPDATE tasks SET title = ?, done = ? WHERE id = ?', (title, int(done), task_id))
+    conn.commit()
+    conn.close()
+
+    updated_task = {'id': task_id, 'title': title, 'done': bool(done)}
+    return jsonify(updated_task), 200
 
 # DELETE /tasks/<int:task_id> - Delete task
 @app.route('/tasks/<int:task_id>', methods=['DELETE'])
 def delete_task(task_id):
-    global tasks
-    
-    task = next((t for t in tasks if t['id'] == task_id), None)
-    
-    if task is None:
-        return jsonify({"error": "Task not found"}), 404
-    
-    tasks = [t for t in tasks if t['id'] != task_id]
-    
-    return '', 204
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute('SELECT id FROM tasks WHERE id = ?', (task_id,))
+    existing = cursor.fetchone()
 
+    if existing is None:
+        conn.close()
+        return jsonify({"error": "Task not found"}), 404
+
+    cursor.execute('DELETE FROM tasks WHERE id = ?', (task_id,))
+    conn.commit()
+    conn.close()
+
+    return '', 204
 
 
 
