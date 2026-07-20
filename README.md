@@ -33,7 +33,7 @@ The API will be available at `http://localhost:3000`.
 
 ## Database screenshot
 
-![Database screenshot](screenshot.png)
+![Database screenshot](Screenshot.png)
 
 ## Example SQL query
 
@@ -43,4 +43,4 @@ DELETE FROM tasks WHERE done = 1;
 
 This deleted all tasks that had been marked done, leaving the table empty —
 confirmed instantly through `GET /tasks` returning `[]`, with no server
-restart needed.
+restart needed
