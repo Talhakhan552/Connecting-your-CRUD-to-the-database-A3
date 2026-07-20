@@ -65,25 +65,22 @@ def get_task(task_id):
 # POST /tasks - Create new task
 @app.route('/tasks', methods=['POST'])
 def create_task():
-    global next_id
-    
     data = request.get_json()
-    
-    # Validation: title must be present and non-empty
+
     if not data or not data.get('title') or not data['title'].strip():
         return jsonify({"error": "Title is required"}), 400
-    
-    new_task = {
-        'id': next_id,
-        'title': data['title'].strip(),
-        'done': False
-    }
-    
-    tasks.append(new_task)
-    next_id += 1
-    
-    return jsonify(new_task), 201
 
+    title = data['title'].strip()
+
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute('INSERT INTO tasks (title, done) VALUES (?, ?)', (title, 0))
+    new_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+
+    new_task = {'id': new_id, 'title': title, 'done': False}
+    return jsonify(new_task), 201
 
 # PUT /tasks/<int:task_id> - Update task
 @app.route('/tasks/<int:task_id>', methods=['PUT'])
